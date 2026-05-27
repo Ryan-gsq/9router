@@ -75,9 +75,9 @@ function mapSub2ApiItem(src, fileName) {
 }
 
 /**
- * Map a codex-cli token.json record (type: "codex", flat top-level fields) to backend payload.
+ * Map a cpa token.json record (type: "codex", flat top-level fields) to backend payload.
  */
-function mapCodexCliItem(src, fileName) {
+function mapCpaTokenItem(src, fileName) {
   const accessToken = src.access_token;
   if (!accessToken) {
     return { ok: false, error: "Missing access_token" };
@@ -120,7 +120,7 @@ function mapCodexCliItem(src, fileName) {
 /**
  * Map a single source record to backend payload. Supports two formats:
  *  1. sub2api: { platform: "openai", credentials: {...}, extra: {...} }
- *  2. codex-cli token.json: { type: "codex", access_token, refresh_token, email, account_id, plan_type, expired, ... }
+ *  2. cpa token.json: { type: "codex", access_token, refresh_token, email, account_id, plan_type, expired, ... }
  * Returns { ok: true, payload } or { ok: false, error }.
  */
 function mapItem(src, fileName) {
@@ -129,7 +129,7 @@ function mapItem(src, fileName) {
   }
 
   if (src.type === "codex" || (!src.credentials && !src.platform && src.access_token)) {
-    return mapCodexCliItem(src, fileName);
+    return mapCpaTokenItem(src, fileName);
   }
 
   if (src.platform && src.platform !== "openai") {
@@ -247,7 +247,7 @@ export default function CodexImportCredentialsModal({ isOpen, onClose, onImporte
     >
       <div className="flex flex-col gap-4">
         <p className="text-sm text-text-muted">
-          Pick one or more JSON files. Each file may be a single object or an array. Supports sub2api format (platform: openai) and codex-cli token.json format (type: codex).
+          Pick one or more JSON files. Each file may be a single object or an array. Supports sub2api format (platform: openai) and cpa token.json format (type: codex).
         </p>
 
         <div className="flex items-center gap-2">

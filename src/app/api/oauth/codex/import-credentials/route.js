@@ -3,7 +3,7 @@ import { createProviderConnection } from "@/models";
 
 /**
  * POST /api/oauth/codex/import-credentials
- * Batch import pre-assembled Codex credential items from the frontend.
+ * Batch import normalized Codex credential items from sub2api or cpa token.json.
  *
  * Body: { items: Array<{
  *   name?, email?, accessToken, refreshToken?, expiresAt?, expiresIn?,
