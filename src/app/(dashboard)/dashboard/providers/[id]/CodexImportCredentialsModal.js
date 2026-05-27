@@ -20,16 +20,9 @@ function decodeJwt(token) {
 }
 
 /**
- * Map a single source record (cli-proxy-api / uni-api style) to backend payload.
- * Returns { ok: true, payload } or { ok: false, error }.
+ * Map a sub2api record (platform: "openai", credentials: {...}, extra: {...}) to backend payload.
  */
-function mapItem(src, fileName) {
-  if (!src || typeof src !== "object") {
-    return { ok: false, error: "Not an object" };
-  }
-  if (src.platform && src.platform !== "openai") {
-    return { ok: false, error: `Unsupported platform: ${src.platform}` };
-  }
+function mapSub2ApiItem(src, fileName) {
   const cred = src.credentials || {};
   const accessToken = cred.access_token || src.access_token;
   if (!accessToken) {
@@ -79,6 +72,71 @@ function mapItem(src, fileName) {
       _source: fileName,
     },
   };
+}
+
+/**
+ * Map a codex-cli token.json record (type: "codex", flat top-level fields) to backend payload.
+ */
+function mapCodexCliItem(src, fileName) {
+  const accessToken = src.access_token;
+  if (!accessToken) {
+    return { ok: false, error: "Missing access_token" };
+  }
+
+  const jwt = decodeJwt(accessToken) || {};
+  const auth = jwt["https://api.openai.com/auth"] || {};
+  const profile = jwt["https://api.openai.com/profile"] || {};
+
+  const email = src.email || profile.email || null;
+  const chatgptAccountId = src.account_id || auth.chatgpt_account_id || null;
+  const chatgptPlanType = src.plan_type || auth.chatgpt_plan_type || null;
+
+  let expiresAt = null;
+  if (src.expired) {
+    const d = new Date(src.expired);
+    if (!Number.isNaN(d.getTime())) {
+      expiresAt = d.toISOString();
+    }
+  }
+
+  const providerSpecificData = {};
+  if (chatgptAccountId) providerSpecificData.chatgptAccountId = chatgptAccountId;
+  if (chatgptPlanType) providerSpecificData.chatgptPlanType = chatgptPlanType;
+
+  return {
+    ok: true,
+    payload: {
+      name: typeof src.name === "string" ? src.name : null,
+      email,
+      accessToken,
+      refreshToken: src.refresh_token || null,
+      expiresAt,
+      providerSpecificData,
+      _source: fileName,
+    },
+  };
+}
+
+/**
+ * Map a single source record to backend payload. Supports two formats:
+ *  1. sub2api: { platform: "openai", credentials: {...}, extra: {...} }
+ *  2. codex-cli token.json: { type: "codex", access_token, refresh_token, email, account_id, plan_type, expired, ... }
+ * Returns { ok: true, payload } or { ok: false, error }.
+ */
+function mapItem(src, fileName) {
+  if (!src || typeof src !== "object") {
+    return { ok: false, error: "Not an object" };
+  }
+
+  if (src.type === "codex" || (!src.credentials && !src.platform && src.access_token)) {
+    return mapCodexCliItem(src, fileName);
+  }
+
+  if (src.platform && src.platform !== "openai") {
+    return { ok: false, error: `Unsupported platform: ${src.platform}` };
+  }
+
+  return mapSub2ApiItem(src, fileName);
 }
 
 export default function CodexImportCredentialsModal({ isOpen, onClose, onImported }) {
@@ -189,7 +247,7 @@ export default function CodexImportCredentialsModal({ isOpen, onClose, onImporte
     >
       <div className="flex flex-col gap-4">
         <p className="text-sm text-text-muted">
-          Pick one or more JSON files. Each file may be a single object or an array. Only platform openai is supported.
+          Pick one or more JSON files. Each file may be a single object or an array. Supports sub2api format (platform: openai) and codex-cli token.json format (type: codex).
         </p>
 
         <div className="flex items-center gap-2">
