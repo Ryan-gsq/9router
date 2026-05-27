@@ -2,6 +2,36 @@ import { register } from "../index.js";
 import { FORMATS } from "../formats.js";
 import { adjustMaxTokens } from "../helpers/maxTokensHelper.js";
 
+const CLAUDE_TO_OPENAI_EFFORT = {
+  low: "low",
+  medium: "medium",
+  high: "high",
+  xhigh: "xhigh",
+  max: "xhigh"
+};
+
+function normalizeClaudeEffort(effort) {
+  if (typeof effort !== "string") return null;
+  return CLAUDE_TO_OPENAI_EFFORT[effort.trim().toLowerCase()] || null;
+}
+
+function inferEffortFromThinking(thinking) {
+  if (!thinking || typeof thinking !== "object") return null;
+  if (thinking.type === "disabled") return "none";
+
+  const budget = Number(thinking.budget_tokens);
+  if (Number.isFinite(budget)) {
+    if (budget <= 0) return "none";
+    if (budget <= 4096) return "low";
+    if (budget <= 8192) return "medium";
+    if (budget <= 16384) return "high";
+    return "xhigh";
+  }
+
+  if (thinking.type === "enabled" || thinking.type === "adaptive") return "medium";
+  return null;
+}
+
 // Convert Claude request to OpenAI format
 export function claudeToOpenAIRequest(model, body, stream) {
   const result = {
@@ -68,6 +98,15 @@ export function claudeToOpenAIRequest(model, body, stream) {
   // Tool choice
   if (body.tool_choice) {
     result.tool_choice = convertToolChoice(body.tool_choice);
+  }
+
+  const effort = normalizeClaudeEffort(body.output_config?.effort) || inferEffortFromThinking(body.thinking);
+  if (effort) {
+    result.reasoning_effort = effort;
+  }
+
+  if (body.speed === "fast") {
+    result.service_tier = "priority";
   }
 
   return result;

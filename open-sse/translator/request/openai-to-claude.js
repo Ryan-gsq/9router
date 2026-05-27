@@ -7,6 +7,14 @@ import { adjustMaxTokens } from "../helpers/maxTokensHelper.js";
 // Previously "proxy_" was used but this is a detectable fingerprint difference.
 const CLAUDE_OAUTH_TOOL_PREFIX = "";
 
+const EFFORTS = new Set(["none", "low", "medium", "high", "xhigh"]);
+
+function normalizeEffort(effort) {
+  if (typeof effort !== "string") return null;
+  const normalized = effort.trim().toLowerCase();
+  return EFFORTS.has(normalized) ? normalized : null;
+}
+
 // Convert OpenAI request to Claude format
 export function openaiToClaudeRequest(model, body, stream) {
   // Tool name mapping for Claude OAuth (capitalizedName → originalName)
@@ -173,29 +181,24 @@ Respond ONLY with the JSON object, no other text.`);
   // Thinking configuration
   if (body.thinking) {
     result.thinking = {
-      type: body.thinking.type || "enabled",
-      ...(body.thinking.budget_tokens && { budget_tokens: body.thinking.budget_tokens }),
-      ...(body.thinking.max_tokens && { max_tokens: body.thinking.max_tokens })
+      type: body.thinking.type || "adaptive",
+      ...(body.thinking.budget_tokens !== undefined && { budget_tokens: body.thinking.budget_tokens }),
+      ...(body.thinking.max_tokens !== undefined && { max_tokens: body.thinking.max_tokens })
     };
   }
 
-  // Map OpenAI reasoning_effort → Claude thinking.budget_tokens
-  // When client sends reasoning_effort (OpenAI format) but no explicit thinking block,
-  // translate to Claude's native format.
-  if (body.reasoning_effort && !result.thinking) {
-    const effortToBudget = {
-      none:   0,
-      low:    4096,
-      medium: 8192,
-      high:   16384,
-      xhigh:  32768,
-    };
-    const budget = effortToBudget[body.reasoning_effort.toLowerCase()];
-    if (budget === 0) {
-      // none → no thinking
-    } else if (budget) {
-      result.thinking = { type: "enabled", budget_tokens: budget };
+  const effort = normalizeEffort(body.reasoning_effort);
+  if (effort) {
+    if (effort === "none") {
+      if (!result.thinking) result.thinking = { type: "disabled" };
+    } else {
+      result.output_config = { effort };
+      if (!result.thinking) result.thinking = { type: "adaptive" };
     }
+  }
+
+  if (body.service_tier === "priority") {
+    result.speed = "fast";
   }
 
   // Attach toolNameMap to result for response translation
