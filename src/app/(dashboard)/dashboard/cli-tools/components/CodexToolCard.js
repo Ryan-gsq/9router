@@ -5,6 +5,7 @@ import { Card, Button, ModelSelectModal, ManualConfigModal } from "@/shared/comp
 import Image from "next/image";
 import BaseUrlSelect from "./BaseUrlSelect";
 import ApiKeySelect from "./ApiKeySelect";
+import CodexImportCredentialsModal from "./CodexImportCredentialsModal";
 import { matchKnownEndpoint } from "./cliEndpointMatch";
 
 export default function CodexToolCard({ tool, isExpanded, onToggle, baseUrl, apiKeys, activeProviders, cloudEnabled, initialStatus, tunnelEnabled, tunnelPublicUrl, tailscaleEnabled, tailscaleUrl }) {
@@ -21,6 +22,7 @@ export default function CodexToolCard({ tool, isExpanded, onToggle, baseUrl, api
   const [subagentModalOpen, setSubagentModalOpen] = useState(false);
   const [modelAliases, setModelAliases] = useState({});
   const [showManualConfigModal, setShowManualConfigModal] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
   const [customBaseUrl, setCustomBaseUrl] = useState("");
 
   useEffect(() => {
@@ -242,6 +244,10 @@ model = "${effectiveSubagentModel}"
                     <span className="material-symbols-outlined text-[18px] mr-1">{showInstallGuide ? "expand_less" : "help"}</span>
                     {showInstallGuide ? "Hide" : "How to Install"}
                   </Button>
+                  <Button variant="outline" size="sm" onClick={() => setShowImportModal(true)}>
+                    <span className="material-symbols-outlined text-[18px] mr-1">upload_file</span>
+                    Import Credentials
+                  </Button>
                 </div>
               </div>
               {showInstallGuide && (
@@ -365,6 +371,9 @@ model = "${effectiveSubagentModel}"
                 <Button variant="ghost" size="sm" onClick={() => setShowManualConfigModal(true)}>
                   <span className="material-symbols-outlined text-[14px] mr-1">content_copy</span>Manual Config
                 </Button>
+                <Button variant="ghost" size="sm" onClick={() => setShowImportModal(true)}>
+                  <span className="material-symbols-outlined text-[14px] mr-1">upload_file</span>Import Credentials
+                </Button>
               </div>
             </>
           )}
@@ -396,6 +405,11 @@ model = "${effectiveSubagentModel}"
         onClose={() => setShowManualConfigModal(false)}
         title="Codex CLI - Manual Configuration"
         configs={getManualConfigs()}
+      />
+
+      <CodexImportCredentialsModal
+        isOpen={showImportModal}
+        onClose={() => setShowImportModal(false)}
       />
     </Card>
   );
