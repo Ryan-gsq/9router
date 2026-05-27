@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Button, Card, Select } from "@/shared/components";
 
 const TARGET_OPTIONS = [
@@ -32,6 +32,61 @@ function normalizeRules(rules) {
     mode: ["default", "override", "block"].includes(rule.mode) ? rule.mode : "default",
     value: rule.value ?? "",
   }));
+}
+
+function ModeDropdown({ value, onChange }) {
+  const [open, setOpen] = useState(false);
+  const dropdownRef = useRef(null);
+  const selectedOption = MODE_OPTIONS.find((option) => option.value === value) || MODE_OPTIONS[0];
+
+  useEffect(() => {
+    if (!open) return;
+
+    const handlePointerDown = (event) => {
+      if (!dropdownRef.current?.contains(event.target)) {
+        setOpen(false);
+      }
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, [open]);
+
+  return (
+    <div ref={dropdownRef} className="relative flex flex-col gap-1.5">
+      <label className="text-sm font-medium text-text-main">Mode</label>
+      <button
+        type="button"
+        onClick={() => setOpen((current) => !current)}
+        className="flex w-full items-center justify-between rounded-[10px] border border-transparent bg-surface-2 px-3 py-2.5 text-left text-[16px] text-text-main transition-all duration-150 focus:border-brand-500/40 focus:outline-none focus:ring-2 focus:ring-brand-500/30 sm:text-sm"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+      >
+        <span>{selectedOption.label}</span>
+        <span className="material-symbols-outlined text-[20px] text-text-muted">expand_more</span>
+      </button>
+      {open && (
+        <div className="absolute left-0 right-0 top-full z-20 mt-1 overflow-hidden rounded-[10px] border border-border bg-surface-2 shadow-lg" role="listbox">
+          {MODE_OPTIONS.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              role="option"
+              aria-selected={option.value === value}
+              onClick={() => {
+                onChange(option.value);
+                setOpen(false);
+              }}
+              className="flex w-full items-center justify-between px-3 py-2.5 text-left text-sm text-text-main transition-colors hover:bg-surface-3 focus:bg-surface-3 focus:outline-none"
+            >
+              <span>{option.label}</span>
+              {option.value === value && <span className="material-symbols-outlined text-[18px] text-brand-500">check</span>}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function ProviderRequestTransformsCard({ value, onSave }) {
@@ -130,11 +185,9 @@ export default function ProviderRequestTransformsCard({ value, onSave }) {
                 className="w-full rounded-[10px] border border-transparent bg-surface-2 px-3 py-2.5 text-[16px] text-text-main transition-all duration-150 focus:border-brand-500/40 focus:outline-none focus:ring-2 focus:ring-brand-500/30 sm:text-sm"
               />
             </div>
-            <Select
-              label="Mode"
+            <ModeDropdown
               value={rule.mode}
-              options={MODE_OPTIONS}
-              onChange={(event) => updateRule(rule.id, { mode: event.target.value })}
+              onChange={(mode) => updateRule(rule.id, { mode })}
             />
             <div className="flex flex-col gap-1.5">
               <label className="text-sm font-medium text-text-main">Value</label>
