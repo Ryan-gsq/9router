@@ -1,4 +1,5 @@
 import { BaseExecutor } from "./base.js";
+import { applyRequestRewriteRules } from "../transformer/requestTransformer.js";
 import { PROVIDERS } from "../config/providers.js";
 
 const GROK_CHAT_API = PROVIDERS["grok-web"].baseUrl;
@@ -291,19 +292,21 @@ export class GrokWebExecutor extends BaseExecutor {
       headers["Cookie"] = `sso=${token}`;
     }
 
+    const { headers: rewrittenHeaders, body: rewrittenBody } = applyRequestRewriteRules({ headers, body: grokPayload, credentials });
+
     log?.info?.("GROK-WEB", `Query to ${model} (grok=${grokModel}, mode=${modelMode}), len=${message.length}`);
 
     let response;
     try {
       response = await fetch(GROK_CHAT_API, {
-        method: "POST", headers, body: JSON.stringify(grokPayload), signal,
+        method: "POST", headers: rewrittenHeaders, body: JSON.stringify(rewrittenBody), signal,
       });
     } catch (err) {
       log?.error?.("GROK-WEB", `Fetch failed: ${err.message || String(err)}`);
       const errResp = new Response(JSON.stringify({
         error: { message: `Grok connection failed: ${err.message || String(err)}`, type: "upstream_error" },
       }), { status: 502, headers: { "Content-Type": "application/json" } });
-      return { response: errResp, url: GROK_CHAT_API, headers, transformedBody: grokPayload };
+      return { response: errResp, url: GROK_CHAT_API, headers: rewrittenHeaders, transformedBody: rewrittenBody };
     }
 
     if (!response.ok) {
@@ -315,14 +318,14 @@ export class GrokWebExecutor extends BaseExecutor {
       const errResp = new Response(JSON.stringify({
         error: { message: errMsg, type: "upstream_error", code: `HTTP_${status}` },
       }), { status, headers: { "Content-Type": "application/json" } });
-      return { response: errResp, url: GROK_CHAT_API, headers, transformedBody: grokPayload };
+      return { response: errResp, url: GROK_CHAT_API, headers: rewrittenHeaders, transformedBody: rewrittenBody };
     }
 
     if (!response.body) {
       const errResp = new Response(JSON.stringify({
         error: { message: "Grok returned empty response body", type: "upstream_error" },
       }), { status: 502, headers: { "Content-Type": "application/json" } });
-      return { response: errResp, url: GROK_CHAT_API, headers, transformedBody: grokPayload };
+      return { response: errResp, url: GROK_CHAT_API, headers: rewrittenHeaders, transformedBody: rewrittenBody };
     }
 
     const cid = `chatcmpl-grok-${crypto.randomUUID().slice(0, 12)}`;
@@ -338,7 +341,7 @@ export class GrokWebExecutor extends BaseExecutor {
     } else {
       finalResponse = await buildNonStreamingResponse(response.body, model, cid, created, isThinking, signal);
     }
-    return { response: finalResponse, url: GROK_CHAT_API, headers, transformedBody: grokPayload };
+    return { response: finalResponse, url: GROK_CHAT_API, headers: rewrittenHeaders, transformedBody: rewrittenBody };
   }
 }
 

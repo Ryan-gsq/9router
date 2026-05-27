@@ -1,4 +1,4 @@
-import { getProviderConnections } from "@/lib/localDb.js";
+import { getProviderConnections, getSettings } from "@/lib/localDb.js";
 import { getExecutor, refreshTokenByProvider } from "open-sse/index.js";
 
 export async function POST(request) {
@@ -15,13 +15,19 @@ export async function POST(request) {
       return Response.json({ success: false, error: `No active connection for provider: ${provider}` }, { status: 400 });
     }
 
+    const settings = await getSettings();
+    const providerRequestTransforms = (settings.providerRequestTransforms || {})[provider] || null;
+
     const credentials = {
       apiKey: connection.apiKey,
       accessToken: connection.accessToken,
       refreshToken: connection.refreshToken,
       copilotToken: connection.copilotToken,
       projectId: connection.projectId,
-      providerSpecificData: connection.providerSpecificData
+      providerSpecificData: {
+        ...(connection.providerSpecificData || {}),
+        providerRequestTransforms,
+      }
     };
 
     const executor = getExecutor(provider);

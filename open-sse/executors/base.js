@@ -1,6 +1,7 @@
 import { HTTP_STATUS, RETRY_CONFIG, DEFAULT_RETRY_CONFIG, resolveRetryEntry, FETCH_CONNECT_TIMEOUT_MS } from "../config/runtimeConfig.js";
 import { proxyAwareFetch } from "../utils/proxyFetch.js";
 import { dbg } from "../utils/debugLog.js";
+import { applyRequestRewriteRules } from "../transformer/requestTransformer.js";
 
 /**
  * BaseExecutor - Base class for provider executors
@@ -77,6 +78,12 @@ export class BaseExecutor {
     return body;
   }
 
+  prepareRequest({ model, body, stream, credentials }) {
+    const transformedBody = this.transformRequest(model, body, stream, credentials);
+    const headers = this.buildHeaders(credentials, stream);
+    return applyRequestRewriteRules({ headers, body: transformedBody, credentials });
+  }
+
   shouldRetry(status, urlIndex) {
     return status === HTTP_STATUS.RATE_LIMITED && urlIndex + 1 < this.getFallbackCount();
   }
@@ -117,8 +124,7 @@ export class BaseExecutor {
 
     for (let urlIndex = 0; urlIndex < fallbackCount; urlIndex++) {
       const url = this.buildUrl(model, stream, urlIndex, credentials);
-      const transformedBody = this.transformRequest(model, body, stream, credentials);
-      const headers = this.buildHeaders(credentials, stream);
+      const { headers, body: transformedBody } = this.prepareRequest({ model, body, stream, credentials });
 
       if (!retryAttemptsByUrl[urlIndex]) retryAttemptsByUrl[urlIndex] = 0;
 

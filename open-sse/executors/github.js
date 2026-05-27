@@ -7,6 +7,7 @@ import { openaiResponsesToOpenAIResponse } from "../translator/response/openai-r
 import { initState } from "../translator/index.js";
 import { parseSSELine, formatSSE } from "../utils/streamHelpers.js";
 import { proxyAwareFetch } from "../utils/proxyFetch.js";
+import { applyRequestRewriteRules } from "../transformer/requestTransformer.js";
 import crypto from "crypto";
 
 export class GithubExecutor extends BaseExecutor {
@@ -192,9 +193,10 @@ export class GithubExecutor extends BaseExecutor {
 
   async executeWithResponsesEndpoint({ model, body, stream, credentials, signal, log, proxyOptions = null }) {
     const url = this.config.responsesUrl;
-    const headers = this.buildHeaders(credentials, stream);
+    const rawHeaders = this.buildHeaders(credentials, stream);
 
-    const transformedBody = openaiToOpenAIResponsesRequest(model, body, stream, credentials);
+    const rawTransformedBody = openaiToOpenAIResponsesRequest(model, body, stream, credentials);
+    const { headers, body: transformedBody } = applyRequestRewriteRules({ headers: rawHeaders, body: rawTransformedBody, credentials });
 
     log?.debug("GITHUB", "Sending translated request to /responses");
 

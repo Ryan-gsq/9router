@@ -114,8 +114,7 @@ export class VertexExecutor extends BaseExecutor {
     }
 
     const url = this.buildUrl(model, stream, 0, credentials);
-    const headers = this.buildHeaders(credentials, stream);
-    const transformedBody = this.transformRequest(model, body, stream, credentials);
+    const { headers, body: transformedBody } = this.prepareRequest({ model, body, stream, credentials });
 
     const response = await proxyAwareFetch(url, {
       method: "POST",

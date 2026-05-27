@@ -42,6 +42,7 @@ import AddApiKeyModal from "./AddApiKeyModal";
 import EditCompatibleNodeModal from "./EditCompatibleNodeModal";
 import AddCustomModelModal from "./AddCustomModelModal";
 import CodexImportCredentialsModal from "./CodexImportCredentialsModal";
+import ProviderRequestTransformsCard from "./ProviderRequestTransformsCard";
 
 const ONE_BY_ONE_DELAY_MS = 1000;
 
@@ -76,6 +77,7 @@ export default function ProviderDetailPage() {
   const [bulkUpdatingProxy, setBulkUpdatingProxy] = useState(false);
   const [providerStrategy, setProviderStrategy] = useState(null);
   const [providerStickyLimit, setProviderStickyLimit] = useState("");
+  const [providerRequestTransforms, setProviderRequestTransforms] = useState({ rules: [] });
   const [thinkingMode, setThinkingMode] = useState("auto");
   const [suggestedModels, setSuggestedModels] = useState([]);
   const [kiloFreeModels, setKiloFreeModels] = useState([]);
@@ -282,6 +284,7 @@ export default function ProviderDetailPage() {
       const override = (settingsData.providerStrategies || {})[providerId] || {};
       setProviderStrategy(override.fallbackStrategy || null);
       setProviderStickyLimit(override.stickyRoundRobinLimit != null ? String(override.stickyRoundRobinLimit) : "1");
+      setProviderRequestTransforms((settingsData.providerRequestTransforms || {})[providerId] || { rules: [] });
       // Load per-provider thinking config
       const thinkingCfg = (settingsData.providerThinking || {})[providerId] || {};
       setThinkingMode(thinkingCfg.mode || "auto");
@@ -369,6 +372,25 @@ export default function ProviderDetailPage() {
   const handleStickyLimitChange = (value) => {
     setProviderStickyLimit(value);
     saveProviderStrategy("round-robin", value);
+  };
+
+  const saveProviderRequestTransforms = async (nextTransforms) => {
+    const settingsRes = await fetch("/api/settings", { cache: "no-store" });
+    const settingsData = settingsRes.ok ? await settingsRes.json() : {};
+    const current = settingsData.providerRequestTransforms || {};
+    const updated = { ...current };
+    if (!nextTransforms?.rules?.length) {
+      delete updated[providerId];
+    } else {
+      updated[providerId] = nextTransforms;
+    }
+    const res = await fetch("/api/settings", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ providerRequestTransforms: updated }),
+    });
+    if (!res.ok) throw new Error("Failed to save request rewrite rules.");
+    setProviderRequestTransforms(nextTransforms?.rules?.length ? nextTransforms : { rules: [] });
   };
 
   const saveThinkingConfig = async (mode) => {
@@ -1094,6 +1116,8 @@ export default function ProviderDetailPage() {
           )}
         </div>
       )}
+
+      <ProviderRequestTransformsCard value={providerRequestTransforms} onSave={saveProviderRequestTransforms} />
 
       {isCompatible && providerNode && (
         <Card>

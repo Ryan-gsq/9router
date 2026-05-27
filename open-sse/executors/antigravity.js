@@ -5,6 +5,7 @@ import { OAUTH_ENDPOINTS, ANTIGRAVITY_HEADERS, INTERNAL_REQUEST_HEADER, AG_DEFAU
 import { HTTP_STATUS } from "../config/runtimeConfig.js";
 import { deriveSessionId } from "../utils/sessionManager.js";
 import { proxyAwareFetch } from "../utils/proxyFetch.js";
+import { applyRequestRewriteRules } from "../transformer/requestTransformer.js";
 import { cleanJSONSchemaForAntigravity } from "../translator/helpers/geminiHelper.js";
 
 // Sanitize function name: Gemini requires [a-zA-Z_][a-zA-Z0-9_.:\-]{0,63}
@@ -207,9 +208,10 @@ export class AntigravityExecutor extends BaseExecutor {
 
     for (let urlIndex = 0; urlIndex < fallbackCount; urlIndex++) {
       const url = this.buildUrl(model, stream, urlIndex);
-      const transformedBody = this.transformRequest(model, body, stream, credentials);
-      const sessionId = transformedBody.request?.sessionId;
-      const headers = this.buildHeaders(credentials, stream, sessionId);
+      const rawTransformedBody = this.transformRequest(model, body, stream, credentials);
+      const sessionId = rawTransformedBody.request?.sessionId;
+      const rawHeaders = this.buildHeaders(credentials, stream, sessionId);
+      const { headers, body: transformedBody } = applyRequestRewriteRules({ headers: rawHeaders, body: rawTransformedBody, credentials });
 
       // Initialize retry counters for this URL
       if (!retryAttemptsByUrl[urlIndex]) {

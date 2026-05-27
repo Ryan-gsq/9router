@@ -37,15 +37,13 @@ export class KiroExecutor extends BaseExecutor {
    */
   async execute({ model, body, stream, credentials, signal, log, proxyOptions = null }) {
     const url = this.buildUrl(model, stream, 0);
-    const transformedBody = this.transformRequest(model, body, stream, credentials);
+    const { headers, body: transformedBody } = this.prepareRequest({ model, body, stream, credentials });
     
     // Merge default retry config with provider-specific config
     const retryConfig = { ...DEFAULT_RETRY_CONFIG, ...this.config.retry };
     let retryAttempts = 0;
 
     while (true) {
-      const headers = this.buildHeaders(credentials, stream);
-      
       const response = await proxyAwareFetch(url, {
         method: "POST",
         headers,
