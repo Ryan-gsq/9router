@@ -1,0 +1,16 @@
+services:
+  9router:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: 9router
+    restart: unless-stopped
+    ports:
+      - "10001:20128"
+    environment:
+      DATA_DIR: /app/data
+      PORT: "20128"
+      HOSTNAME: 0.0.0.0
+      DEBUG: "false"
+    volumes:
+      - ./data:/app/data
