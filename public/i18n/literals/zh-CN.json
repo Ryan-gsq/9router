@@ -794,5 +794,7 @@
   "No rewrite rules configured": "未配置改写规则",
   "Saved": "已保存",
   "Value is required for Default and Override rules.": "默认和覆盖规则必须填写值。",
-  "Failed to save request rewrite rules.": "保存请求改写规则失败。"
+  "Failed to save request rewrite rules.": "保存请求改写规则失败。",
+  "Combo-only API mode": "仅 Combo API 模式",
+  "External API clients can only list and call combo models. Admin pages are unchanged.": "外部 API 客户端只能列出和调用 Combo 模型。管理页面不受影响。"
 }

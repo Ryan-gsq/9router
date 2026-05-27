@@ -67,6 +67,7 @@ export default function APIPageClient({ machineId }) {
   const [hasPassword, setHasPassword] = useState(true);
   const [tunnelDashboardAccess, setTunnelDashboardAccess] = useState(false);
   const [rtkEnabled, setRtkEnabledState] = useState(true);
+  const [comboOnlyMode, setComboOnlyMode] = useState(false);
   const [cavemanEnabled, setCavemanEnabled] = useState(false);
   const [cavemanLevel, setCavemanLevel] = useState("full");
 
@@ -238,6 +239,7 @@ export default function APIPageClient({ machineId }) {
         setHasPassword(data.hasPassword || false);
         setTunnelDashboardAccess(data.tunnelDashboardAccess || false);
         setRtkEnabledState(data.rtkEnabled !== false);
+        setComboOnlyMode(!!data.comboOnlyMode);
         setCavemanEnabled(!!data.cavemanEnabled);
         setCavemanLevel(data.cavemanLevel || "full");
       }
@@ -312,6 +314,11 @@ export default function APIPageClient({ machineId }) {
     } catch (error) {
       console.log("Error updating setting:", error);
     }
+  };
+
+  const handleComboOnlyMode = (value) => {
+    setComboOnlyMode(value);
+    patchSetting({ comboOnlyMode: value });
   };
 
   const handleCavemanEnabled = (value) => {
@@ -1115,6 +1122,19 @@ export default function APIPageClient({ machineId }) {
           <Toggle
             checked={requireApiKey}
             onChange={() => handleRequireApiKey(!requireApiKey)}
+          />
+        </div>
+
+        <div className="flex items-center justify-between pb-4 mb-4 border-b border-border">
+          <div>
+            <p className="font-medium">Combo-only API mode</p>
+            <p className="text-sm text-text-muted">
+              External API clients can only list and call combo models. Admin pages are unchanged.
+            </p>
+          </div>
+          <Toggle
+            checked={comboOnlyMode}
+            onChange={() => handleComboOnlyMode(!comboOnlyMode)}
           />
         </div>
 

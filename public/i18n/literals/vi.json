@@ -211,5 +211,7 @@
   "No rewrite rules configured": "No rewrite rules configured",
   "Saved": "Saved",
   "Value is required for Default and Override rules.": "Value is required for Default and Override rules.",
-  "Failed to save request rewrite rules.": "Failed to save request rewrite rules."
+  "Failed to save request rewrite rules.": "Failed to save request rewrite rules.",
+  "Combo-only API mode": "Chế độ API chỉ combo",
+  "External API clients can only list and call combo models. Admin pages are unchanged.": "Ứng dụng khách API bên ngoài chỉ có thể liệt kê và gọi các mô hình combo. Trang quản trị không thay đổi."
 }

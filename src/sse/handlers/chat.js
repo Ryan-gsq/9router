@@ -91,6 +91,10 @@ export async function handleChat(request, clientRawRequest = null) {
 
   // Check if model is a combo (has multiple models with fallback)
   const comboModels = await getComboModels(modelStr);
+  if (settings.comboOnlyMode && !comboModels) {
+    log.warn("CHAT", "Combo-only API mode blocked non-combo model", { model: modelStr });
+    return errorResponse(HTTP_STATUS.FORBIDDEN, "Combo-only API mode enabled");
+  }
   if (comboModels) {
     // Check for combo-specific strategy first, fallback to global
     const comboStrategies = settings.comboStrategies || {};

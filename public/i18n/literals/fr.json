@@ -211,5 +211,7 @@
   "No rewrite rules configured": "No rewrite rules configured",
   "Saved": "Saved",
   "Value is required for Default and Override rules.": "Value is required for Default and Override rules.",
-  "Failed to save request rewrite rules.": "Failed to save request rewrite rules."
+  "Failed to save request rewrite rules.": "Failed to save request rewrite rules.",
+  "Combo-only API mode": "Mode API combo uniquement",
+  "External API clients can only list and call combo models. Admin pages are unchanged.": "Les clients API externes peuvent uniquement lister et appeler les modèles combo. Les pages d’administration restent inchangées."
 }

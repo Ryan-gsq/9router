@@ -5,7 +5,7 @@ import {
   isAnthropicCompatibleProvider,
   isOpenAICompatibleProvider,
 } from "@/shared/constants/providers";
-import { getProviderConnections, getCombos, getCustomModels, getModelAliases } from "@/lib/localDb";
+import { getProviderConnections, getCombos, getCustomModels, getModelAliases, getSettings } from "@/lib/localDb";
 import { getDisabledModels } from "@/lib/disabledModelsDb";
 import { resolveKiroModels } from "open-sse/services/kiroModels.js";
 
@@ -133,6 +133,27 @@ function comboMatchesKinds(combo, kindFilter) {
   return kindFilter.includes(kind);
 }
 
+async function isComboOnlyModeEnabled() {
+  try {
+    const settings = await getSettings();
+    return !!settings.comboOnlyMode;
+  } catch (e) {
+    console.log("Could not fetch settings");
+    return false;
+  }
+}
+
+function dedupeModels(models) {
+  const dedupedModels = [];
+  const seenModelIds = new Set();
+  for (const model of models) {
+    if (!model?.id || seenModelIds.has(model.id)) continue;
+    seenModelIds.add(model.id);
+    dedupedModels.push(model);
+  }
+  return dedupedModels;
+}
+
 /**
  * Build OpenAI-format models list filtered by service kinds.
  * @param {string[]} kindFilter - List of service kinds to include (e.g. ["llm"], ["webSearch","webFetch"]).
@@ -196,6 +217,10 @@ export async function buildModelsList(kindFilter) {
       entry.kind = combo.kind;
     }
     models.push(entry);
+  }
+
+  if (await isComboOnlyModeEnabled()) {
+    return dedupeModels(models);
   }
 
   if (connections.length === 0) {
@@ -388,15 +413,7 @@ export async function buildModelsList(kindFilter) {
     }
   }
 
-  const dedupedModels = [];
-  const seenModelIds = new Set();
-  for (const model of models) {
-    if (!model?.id || seenModelIds.has(model.id)) continue;
-    seenModelIds.add(model.id);
-    dedupedModels.push(model);
-  }
-
-  return dedupedModels;
+  return dedupeModels(models);
 }
 
 /**
