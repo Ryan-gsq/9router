@@ -189,10 +189,7 @@ export default function CodexImportCredentialsModal({ isOpen, onClose, onImporte
     >
       <div className="flex flex-col gap-4">
         <p className="text-sm text-text-muted">
-          Pick one or more JSON files exported from cli-proxy-api / uni-api style tools.
-          Each file may contain a single record or an array. Only{" "}
-          <code className="px-1 bg-black/5 dark:bg-white/5 rounded">platform: &quot;openai&quot;</code>{" "}
-          is supported.
+          Pick one or more JSON files. Each file may be a single object or an array. Only platform openai is supported.
         </p>
 
         <div className="flex items-center gap-2">
@@ -219,7 +216,7 @@ export default function CodexImportCredentialsModal({ isOpen, onClose, onImporte
         {parsed.length > 0 && (
           <div className="border border-border rounded-lg overflow-hidden">
             <div className="px-3 py-2 bg-surface-2 text-xs font-medium border-b border-border">
-              {parsed.length} record(s) ready to import
+              <span>Records ready to import:</span> {parsed.length}
             </div>
             <div className="max-h-64 overflow-y-auto custom-scrollbar divide-y divide-border">
               {parsed.map((p, i) => (
@@ -253,7 +250,7 @@ export default function CodexImportCredentialsModal({ isOpen, onClose, onImporte
         {parseErrors.length > 0 && (
           <div className="border border-yellow-500/30 bg-yellow-500/10 rounded-lg overflow-hidden">
             <div className="px-3 py-2 text-xs font-medium border-b border-yellow-500/20 text-yellow-700 dark:text-yellow-400">
-              {parseErrors.length} skipped
+              <span>Skipped:</span> {parseErrors.length}
             </div>
             <div className="max-h-32 overflow-y-auto custom-scrollbar">
               {parseErrors.map((e, i) => (
